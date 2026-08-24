@@ -18,6 +18,7 @@
 body{margin:0;background:var(--warm-light);color:#333;
 font-family:Calibri,Arial,sans-serif;font-size:14px;line-height:1.45;
 font-variant-numeric:tabular-nums;}
+body.modal-abierto{overflow:hidden;}
 
 .header{background:var(--petrol);border-bottom:3px solid var(--emer);min-height:70px;
 display:flex;align-items:center;gap:16px;padding:0 22px;flex-wrap:wrap;}
@@ -39,8 +40,9 @@ padding:12px 16px;margin-bottom:18px;font-size:13.5px;}
 @media(max-width:1100px){.col4,.col6{grid-column:span 12;}}
 
 .tcard{display:flex;flex-direction:column;background:var(--card);border-radius:var(--r);
-box-shadow:var(--sh);padding:20px 22px;text-decoration:none;color:inherit;
-transition:box-shadow .15s,transform .15s;position:relative;overflow:hidden;min-height:180px;}
+box-shadow:var(--sh);padding:20px 22px;text-align:left;font:inherit;color:inherit;
+border:none;cursor:pointer;transition:box-shadow .15s,transform .15s;
+position:relative;overflow:hidden;min-height:180px;}
 .tcard::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--sage);}
 .tcard:hover{box-shadow:var(--sh-h);transform:translateY(-1px);}
 .tcard .ico{font-size:26px;line-height:1;margin-bottom:10px;}
@@ -67,9 +69,35 @@ details.help b{color:#333;}
 
 .foot{margin-top:22px;font-size:11.5px;color:var(--stone);text-align:center;}
 
+/* ===== VENTANA EMERGENTE ===== */
+.overlay{display:none;position:fixed;inset:0;z-index:60;
+background:rgba(14,59,54,.55);padding:22px;}
+.overlay.abierto{display:flex;flex-direction:column;}
+.vent{background:var(--card);border-radius:var(--r);box-shadow:0 10px 40px rgba(14,59,54,.35);
+width:100%;max-width:1320px;margin:0 auto;flex:1;display:flex;flex-direction:column;
+overflow:hidden;min-height:0;}
+.vtop{background:var(--petrol);border-bottom:3px solid var(--emer);
+display:flex;align-items:center;gap:14px;padding:0 18px;min-height:56px;flex:none;}
+.vtop .vt{color:#fff;font-size:15px;font-weight:700;}
+.vtop .vs{color:#B9CFC9;font-size:11.5px;}
+.vtop .acc{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.vlink{color:#B9CFC9;font-size:12px;text-decoration:none;border:1px solid rgba(255,255,255,.3);
+border-radius:8px;padding:6px 12px;white-space:nowrap;}
+.vlink:hover{color:#fff;border-color:var(--emer);}
+.vx{background:none;border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:8px;
+width:34px;height:34px;font-size:19px;line-height:1;cursor:pointer;flex:none;}
+.vx:hover{border-color:var(--emer);}
+.vbody{flex:1;min-height:0;position:relative;background:var(--warm-light);}
+.vbody iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
+.cargando{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+flex-direction:column;gap:6px;color:var(--stone);font-size:13px;background:var(--warm-light);}
+.cargando b{color:var(--sage-dark);font-size:14px;}
+
 @media(max-width:900px){
   .wrap{padding:14px 14px 36px;}
   .col4,.col6,.col12{grid-column:span 12;}
+  .overlay{padding:0;}
+  .vent{border-radius:0;max-width:none;}
 }
 @media(max-width:600px){
   .header{padding:0 14px;min-height:60px;}
@@ -79,12 +107,16 @@ details.help b{color:#333;}
   .tcard{min-height:0;padding:16px 18px;}
   .tcard:hover{box-shadow:var(--sh);transform:none;}
   .tcard:active{background:var(--warm-light);}
+  .vtop{padding:0 12px;}
+  .vtop .vs{display:none;}
+  .vlink{padding:6px 9px;font-size:11px;}
 }
 @media print{
   @page{size:A4 landscape;margin:9mm;}
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
   body{background:#fff!important;}
   .wrap{max-width:none;padding:0;}
+  .overlay{display:none!important;}
   .tcard,.panel,.intro{box-shadow:none;border:1px solid var(--warm);break-inside:avoid;}
 }
 </style>
@@ -111,7 +143,7 @@ details.help b{color:#333;}
 
   <div class="grid">
 
-    <a class="tcard col6" href="https://script.google.com/macros/s/AKfycbwhqOJpoRFxdf93JS7ivTin86etnvRcdKiUa_vP3HV3hRZ4kIxJdtyz-HkKOw7kXS91/exec?vista=consulta" target="_blank" rel="noopener">
+    <button class="tcard col6" onclick="abrir('consulta')">
       <div class="ico">&#128269;</div>
       <div class="tt">Consultar y solicitar</div>
       <div class="who">Analistas de Desarrollo</div>
@@ -121,9 +153,9 @@ details.help b{color:#333;}
         al almacén desde la misma pantalla.
       </div>
       <div class="go">Abrir consulta &rarr;</div>
-    </a>
+    </button>
 
-    <a class="tcard alt col6" href="https://script.google.com/macros/s/AKfycbwhqOJpoRFxdf93JS7ivTin86etnvRcdKiUa_vP3HV3hRZ4kIxJdtyz-HkKOw7kXS91/exec?vista=registro" target="_blank" rel="noopener">
+    <button class="tcard alt col6" onclick="abrir('registro')">
       <div class="ico">&#128230;</div>
       <div class="tt">Registrar movimientos</div>
       <div class="who">Almacén de contramuestras</div>
@@ -133,7 +165,7 @@ details.help b{color:#333;}
         y los gráficos de ocupación por taper.
       </div>
       <div class="go">Abrir registro &rarr;</div>
-    </a>
+    </button>
 
     <div class="panel col12">
       <div class="pt">Qué significa cada estado</div>
@@ -153,13 +185,13 @@ details.help b{color:#333;}
   <details class="help">
     <summary>&iquest;C&oacute;mo funciona esta p&aacute;gina?</summary>
     <p><b>Esta p&aacute;gina no guarda informaci&oacute;n.</b> Es solo la puerta de entrada.
-    Los dos botones abren el sistema de contramuestras, que vive en Google y se
-    alimenta de su propia hoja de c&aacute;lculo.</p>
+    Las dos opciones abren el sistema de contramuestras en una ventana sobre esta
+    p&aacute;gina; el sistema vive en Google y se alimenta de su propia hoja de c&aacute;lculo.</p>
     <p><b>Taper:</b> caja numerada donde se archivan las contramuestras.
     <b>Depurar:</b> dar de baja una prenda que ya cumpli&oacute; su tiempo de archivo.
     <b>Fase:</b> etapa del desarrollo a la que corresponde la prenda.</p>
-    <p><b>Si al abrir te pide iniciar sesi&oacute;n</b>, entra con tu cuenta de Google.
-    <b>Si no ves un cambio reciente</b>, refresca con Ctrl + Shift + R.</p>
+    <p><b>Si la ventana queda en blanco</b>, usa el bot&oacute;n "Abrir en pesta&ntilde;a"
+    de la barra superior. <b>Si no ves un cambio reciente</b>, refresca con Ctrl + Shift + R.</p>
     <p><b>Problemas con los datos o con una prenda:</b> es el sistema de Jos&eacute;;
     coord&iacute;nalo directamente con &eacute;l. <b>Problemas con esta p&aacute;gina o
     con el portal:</b> Christian Talepcio, An&aacute;lisis de Datos e IA.</p>
@@ -168,5 +200,68 @@ details.help b{color:#333;}
   <div class="foot">LIVES &middot; Desarrollo &middot; Almac&eacute;n de Contramuestras</div>
 
 </div>
+
+<!-- ================= VENTANA EMERGENTE ================= -->
+<div id="modal" class="overlay" onclick="fuera(event)">
+  <div class="vent">
+    <div class="vtop">
+      <div>
+        <div class="vt" id="mTitulo"></div>
+        <div class="vs" id="mSub"></div>
+      </div>
+      <div class="acc">
+        <a class="vlink" id="mLink" href="#" target="_blank" rel="noopener">Abrir en pesta&ntilde;a</a>
+        <button class="vx" onclick="cerrar()" title="Cerrar">&times;</button>
+      </div>
+    </div>
+    <div class="vbody">
+      <div class="cargando" id="mCarga">
+        <b>Abriendo el sistema&hellip;</b>
+        <span>Si queda en blanco, usa "Abrir en pesta&ntilde;a".</span>
+      </div>
+      <iframe id="mFrame" title="Sistema de contramuestras"></iframe>
+    </div>
+  </div>
+</div>
+
+<script>
+  var BASE = 'https://script.google.com/macros/s/AKfycbwhqOJpoRFxdf93JS7ivTin86etnvRcdKiUa_vP3HV3hRZ4kIxJdtyz-HkKOw7kXS91/exec';
+
+  var VISTAS = {
+    consulta: { titulo: 'Consultar y solicitar',
+                sub: 'Analistas de Desarrollo' },
+    registro: { titulo: 'Registrar movimientos',
+                sub: 'Almacén de contramuestras' }
+  };
+
+  function abrir(v){
+    var d = VISTAS[v];
+    var url = BASE + '?vista=' + v;
+
+    document.getElementById('mTitulo').textContent = d.titulo;
+    document.getElementById('mSub').textContent = d.sub;
+    document.getElementById('mLink').href = url;
+    document.getElementById('mCarga').style.display = 'flex';
+
+    var f = document.getElementById('mFrame');
+    f.onload = function(){ document.getElementById('mCarga').style.display = 'none'; };
+    f.src = url;
+
+    document.getElementById('modal').classList.add('abierto');
+    document.body.classList.add('modal-abierto');
+  }
+
+  function cerrar(){
+    document.getElementById('modal').classList.remove('abierto');
+    document.body.classList.remove('modal-abierto');
+    document.getElementById('mFrame').src = 'about:blank';
+  }
+
+  function fuera(e){ if(e.target.id === 'modal') cerrar(); }
+
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape') cerrar();
+  });
+</script>
 </body>
 </html>
