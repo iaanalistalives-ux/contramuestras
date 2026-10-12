@@ -677,17 +677,27 @@ document.addEventListener('visibilitychange', function(){
   if (!document.hidden && cargado && Date.now() - ultimaCarga > 120000 && !SEL) cargar();
 });
 
+/* Regla 500 (12/10/2026): la búsqueda es un filtro: se muestran todas las coincidencias,
+   la de registro más reciente arriba (fecha y hora de registro; a igualdad, correlativo mayor). */
+function claveReciente(r){
+  var f = String(r.regFecha || '').split('/');
+  return (f.length === 3 ? f[2] + f[1] + f[0] : '00000000') + ' ' + String(r.regHora || '00:00');
+}
+function masRecienteArriba(a, b){
+  var x = claveReciente(a), y = claveReciente(b);
+  if (x !== y) return x < y ? 1 : -1;
+  return String(a.id) < String(b.id) ? 1 : (String(a.id) > String(b.id) ? -1 : 0);
+}
 function lanzar(){ clearTimeout(timer); timer = setTimeout(pintar, 150); }
 function pintar(){
   var q = $('buscar').value.trim().toUpperCase(), bloque = $('bloque'), sin = $('sinRes');
   if (q.length < 2) { bloque.classList.add('oculto'); sin.classList.add('oculto'); return; }
   var todas = INV.filter(function(r){ return (r.estilo + ' ' + r.cliente + ' ' + r.color).toUpperCase().indexOf(q) !== -1; });
-  var vis = todas.slice(0, 60);
+  var vis = todas.sort(masRecienteArriba);
   if (!vis.length) { bloque.classList.add('oculto'); sin.classList.remove('oculto'); return; }
   sin.classList.add('oculto');
   var tot = 0; vis.forEach(function(r){ tot += Number(r.cantidad) || 0; });
-  $('conteo').textContent = vis.length + ' registros · ' + tot + ' prendas'
-    + (todas.length > 60 ? ' · hay ' + todas.length + ' coincidencias: se muestran las primeras 60, escribe más para afinar' : '');
+  $('conteo').textContent = vis.length + ' registros · ' + tot + ' prendas';
   var html = '';
   vis.forEach(function(r){
     var btn = '';

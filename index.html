@@ -1008,16 +1008,29 @@ function filtrar(q, estado){
 }
 
 /* ================= CONSULTA ================= */
+/* Regla 500 (12/10/2026): la búsqueda es un filtro: se muestran todas las coincidencias,
+   la de registro más reciente arriba (fecha y hora de registro; a igualdad, correlativo mayor). */
+function claveReciente(r){
+  var f = String(r.regFecha || '').split('/');
+  return (f.length === 3 ? f[2] + f[1] + f[0] : '00000000') + ' ' + String(r.regHora || '00:00');
+}
+function masRecienteArriba(a, b){
+  var x = claveReciente(a), y = claveReciente(b);
+  if (x !== y) return x < y ? 1 : -1;
+  return String(a.id) < String(b.id) ? 1 : (String(a.id) > String(b.id) ? -1 : 0);
+}
 function lanzarConsulta(){ clearTimeout(timerC); timerC = setTimeout(consultar, 150); }
 function consultar(){
   var q = $('qc').value.trim(), bloque = $('bloqueRes'), sin = $('sinRes');
   if (q.length < 2) { bloque.classList.add('oculto'); sin.classList.add('oculto'); return; }
-  var res = filtrar(q, 'TODAS');
+  var t = q.toUpperCase();
+  var res = INV.filter(function(r){ return (r.estilo + ' ' + r.cliente + ' ' + r.color).toUpperCase().indexOf(t) !== -1; })
+               .sort(masRecienteArriba);
   if (!res.length) { bloque.classList.add('oculto'); sin.classList.remove('oculto'); return; }
   sin.classList.add('oculto');
   var tot = 0;
   res.forEach(function(r){ tot += Number(r.cantidad) || 0; });
-  $('conteoC').textContent = res.length + ' registros · ' + tot + ' prendas' + (res.length >= 40 ? ' · se muestran los primeros 40: escribe más para afinar' : '');
+  $('conteoC').textContent = res.length + ' registros · ' + tot + ' prendas';
   var html = '';
   res.forEach(function(r){
     var mot = r.estado === 'DEPURADA' ? (r.motivoD || '') : (r.motivoP || '');
