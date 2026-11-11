@@ -798,6 +798,9 @@ details.help b{color:#333;}
   .overlay,#aviso,details.help,.botsCab,#bloqueRegistro{display:none!important;}
   .panel{box-shadow:none;border:1px solid var(--warm);}
 }
+.modoBase{font-size:12px;color:#5B6B66;margin-top:4px;min-height:0}
+.avisoBase{font-size:12.5px;font-weight:700;color:#B3261E;margin-top:4px}
+html[data-tema="oscuro"] .modoBase{color:#9FB3AD}html[data-tema="oscuro"] .avisoBase{color:#F47C7C}
 </style>
 <style id="lsLimp2Css">/* lives-limpieza v2 · sin notas, veredictos ni paneles de título arriba */.lsOculto{display:none!important}</style>
 </head>
@@ -870,11 +873,11 @@ details.help b{color:#333;}
     <div id="vIngreso" class="oculto formu">
       <div class="fila">
         <div><label>Cliente</label><select id="cliente"></select></div>
-        <div><label>Estilo</label><input id="estilo" placeholder="24831-4A" autocomplete="off"></div>
+        <div><label>Estilo</label><input id="estilo" placeholder="24831-4A" autocomplete="off"><div class="modoBase" id="modoIng"></div></div>
       </div>
       <div class="fila">
         <div><label>Fase</label><select id="fase"></select></div>
-        <div><label>Color</label><input id="color" placeholder="NAVY" autocomplete="off"></div>
+        <div><label>Color</label><input id="color" placeholder="NAVY" autocomplete="off" list="lColBase"><div class="avisoBase" id="abColor"></div></div>
       </div>
       <div class="fila">
         <div><label>Cantidad</label><input id="cantidad" type="number" min="1" value="1" inputmode="numeric"></div>
@@ -975,11 +978,11 @@ details.help b{color:#333;}
     <div class="vbody">
       <div class="fila">
         <div><label>Cliente</label><select id="eCliente"></select></div>
-        <div><label>Estilo</label><input id="eEstilo" autocomplete="off"></div>
+        <div><label>Estilo</label><input id="eEstilo" autocomplete="off"><div class="modoBase" id="modoEdi"></div></div>
       </div>
       <div class="fila">
         <div><label>Fase</label><select id="eFase"></select></div>
-        <div><label>Color</label><input id="eColor" autocomplete="off"></div>
+        <div><label>Color</label><input id="eColor" autocomplete="off" list="lColBase"><div class="avisoBase" id="abEColor"></div></div>
       </div>
       <div class="fila">
         <div><label>Cantidad</label><input id="eCantidad" type="number" min="1" inputmode="numeric"></div>
@@ -1158,7 +1161,7 @@ function cargar(silencioso){
       llenar('eCliente', LISTAS.CLIENTES); llenar('eFase', LISTAS.FASES); llenar('eAnalista', LISTAS.ANALISTAS);
     }
     ['eTaper','taper','taperDev'].forEach(function(id){ $(id).max = CFG.taperMax; });
-    cargado = true;
+    cargado = true; cargarCatBase();
     $('qc').disabled = false;
     ponerEstado();
     consultar();
@@ -1312,6 +1315,61 @@ document.addEventListener('visibilitychange', function(){
   }
 });
 
+/* ================= SELECCIÓN DESDE LA BASE (11nov) =================
+   Regla: lo que existe en la base de OPs o de Partidas se ELIGE, no se escribe;
+   si no está ahí, se toma de lo ya registrado. Excepción: un proto que todavía
+   no tiene OP (su número de estilo no está en la base de OPs) se puede escribir.
+   Aquí aplica al COLOR. La base lo vuelve a revisar al guardar. */
+var CATB = null;
+function normB(v){ return String(v == null ? '' : v).replace(/\s+/g, ' ').trim().toUpperCase(); }
+function cargarCatBase(){
+  if (CATB) return;
+  rpcLeer('cm_catalogo_base', {}, 30000).then(function(r){
+    if (!r || !r.ok || !r.estilos) return;
+    r._e = {}; r._c = {};
+    r.estilos.forEach(function(x){ r._e[normB(x)] = 1; });
+    (r.colores || []).forEach(function(x){ r._c[normB(x)] = 1; });
+    CATB = r;
+    if (!document.getElementById('lColBase')) {
+      var dl = document.createElement('datalist'); dl.id = 'lColBase';
+      dl.innerHTML = r.colores.map(function(x){ return '<option value="' + esc(x) + '">'; }).join('');
+      document.body.appendChild(dl);
+    }
+    modoBase('estilo', 'modoIng'); modoBase('eEstilo', 'modoEdi');
+  }, function(){});
+}
+function conOP(estilo){ return !!CATB && CATB._e[normB(estilo).split('-')[0].trim()] === 1; }
+function modoBase(idEstilo, idModo){
+  var m = $(idModo), e = $(idEstilo);
+  if (!m || !e) return;
+  m.textContent = (!CATB || !e.value.trim()) ? '' : (conOP(e.value) ? 'Ya tiene OP: el color se elige de la lista.' : 'Proto sin OP: puedes escribir el color.');
+}
+// con OP, el color tiene que estar en la base; original = lo que ya tenía la prenda (no se revisa si no se toca)
+function exigirColor(idEstilo, idColor, idAviso, original){
+  var c = $(idColor), a = $(idAviso), v = normB(c.value);
+  // quedó vacío porque se borró un color que no existe: no se guarda así, hay que elegir uno
+  if (!v && a && a.textContent && conOP($(idEstilo).value)) return false;
+  if (!CATB || !v || !conOP($(idEstilo).value) || CATB._c[v] === 1 || (original != null && normB(original) === v)) { if (a) a.textContent = ''; return true; }
+  var msg = '"' + c.value.trim() + '" no está en la base de datos. Este estilo ya tiene OP: elige el color de la lista.';
+  // al editar se devuelve el color que tenía la prenda, para que no quede vacío por error
+  if (original != null && normB(original)) { c.value = original; msg += ' Se dejó el color que tenía.'; }
+  else c.value = '';
+  if (a) a.textContent = msg;
+  return false;
+}
+document.addEventListener('change', function(ev){
+  var id = ev.target && ev.target.id;
+  if (id === 'estilo' || id === 'color') { modoBase('estilo', 'modoIng'); exigirColor('estilo', 'color', 'abColor', null); }
+  if (id === 'eEstilo' || id === 'eColor') { modoBase('eEstilo', 'modoEdi'); exigirColor('eEstilo', 'eColor', 'abEColor', EDIT ? EDIT.color : null); }
+}, true);
+document.addEventListener('input', function(ev){
+  var id = ev.target && ev.target.id;
+  if (id === 'estilo') modoBase('estilo', 'modoIng');
+  if (id === 'eEstilo') modoBase('eEstilo', 'modoEdi');
+  if (id === 'color') $('abColor').textContent = '';
+  if (id === 'eColor') $('abEColor').textContent = '';
+}, true);
+
 /* ================= EDICIÓN ================= */
 function buscarPorId(id){ for (var i = 0; i < INV.length; i++) if (String(INV[i].id) === String(id)) return INV[i]; return null; }
 function asegurarOpcion(id, v){
@@ -1330,6 +1388,7 @@ function abrirEdicion(id){
   $('eFase').value = r.fase || ''; $('eColor').value = r.color || '';
   $('eCantidad').value = r.cantidad || 1; $('eTaper').value = r.taper || '';
   $('eMotivo').value = '';
+  $('abEColor').textContent = ''; modoBase('eEstilo', 'modoEdi');
   var f = '';
   if (r.creacion && r.creacion.indexOf('/') !== -1) { var p = r.creacion.split('/'); f = p[2] + '-' + p[1] + '-' + p[0]; }
   $('eCreacion').value = f;
@@ -1342,6 +1401,7 @@ function abrirEdicion(id){
 }
 function guardarEdicion(){
   if (!EDIT) return;
+  if (!exigirColor('eEstilo', 'eColor', 'abEColor', EDIT.color)) { avisar('Este estilo ya tiene OP: elige el color de la lista.', 'error'); return; }
   var b = $('bEditar'); b.disabled = true; b.textContent = 'Guardando…';
   escribir('cm_editar', { p_id: EDIT.id, p: {
       cliente: val('eCliente'), estilo: val('eEstilo').trim().toUpperCase(), fase: val('eFase'),
@@ -1603,6 +1663,7 @@ function aplicar(r){
   if ($('modalDep').classList.contains('abierto')) abrirDepuracion();
 }
 function guardarIngreso(){
+  if (!exigirColor('estilo', 'color', 'abColor', null)) { avisar('Este estilo ya tiene OP: elige el color de la lista.', 'error'); return; }
   var b = $('bIngresar'); b.disabled = true; b.textContent = 'Guardando…';
   escribir('cm_ingresar', { p: {
       cliente: val('cliente'), estilo: val('estilo').trim().toUpperCase(), fase: val('fase'),
@@ -1611,7 +1672,7 @@ function guardarIngreso(){
     function(r){
       b.disabled = false; b.textContent = 'GUARDAR INGRESO';
       aplicar(r);
-      if (r.ok) { ['estilo','color','taper'].forEach(function(id){ $(id).value = ''; }); $('cantidad').value = 1; }
+      if (r.ok) { ['estilo','color','taper'].forEach(function(id){ $(id).value = ''; }); $('cantidad').value = 1; modoBase('estilo', 'modoIng'); CATB = null; var dl = document.getElementById('lColBase'); if (dl) dl.remove(); cargarCatBase(); }
     });
 }
 function confirmar(){

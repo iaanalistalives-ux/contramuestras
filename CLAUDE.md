@@ -12,6 +12,7 @@ Almacén de contramuestras de Desarrollo. Una contramuestra es la prenda de refe
 - Leer: `cm_inicio` (listas, inventario, solicitudes, configuración y permisos de la persona) y `cm_pendientes` (bandeja).
 - Registrar: `cm_ingresar`, `cm_prestar`, `cm_devolver`, `cm_depurar`, `cm_editar` (tabla `cm_prendas`); `cm_atender` (`cm_solicitudes`); `cm_guardar_listas` (`cm_listas`, `cm_config`); el historial queda en `cm_movimientos`.
 - Solicitar (`buscar.html`): `cm_solicitar` (`cm_solicitudes`).
+- Selección desde la base (desde el 11/11/2026): en Ingresar y Editar prenda, si el número del estilo ya tiene OP (está en `ops`), el color se elige de la lista (`ops` + `partidas` + lo ya registrado); un proto sin OP se puede escribir. Lectura `cm_catalogo_base`; `cm_ingresar` y `cm_editar` lo validan con `cm_valida_base_` (al editar, solo si el color cambia).
 - No usa Storage ni lee tablas directo.
 
 ## Quién la usa
