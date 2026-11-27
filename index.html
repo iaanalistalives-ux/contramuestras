@@ -1561,7 +1561,9 @@ function pintarGraficos(){
 }
 
 /* ================= LISTAS ================= */
-var NOMBRES_LISTAS = [['CLIENTES','Clientes'],['FASES','Fases'],['ANALISTAS','Analistas'],
+/* 27/11/2026: las fases y los analistas ya no se escriben aquí. Las fases salen de la maestra de fases
+   de Desarrollo y los analistas del personal de Desarrollo (altas por Catálogos). */
+var NOMBRES_LISTAS = [['CLIENTES','Clientes'],
                       ['MOT_PRESTAMO','Motivos de préstamo'],['MOT_DEPURACION','Motivos de depuración']];
 function cfgVal(p){ for (var i = 0; i < CONFIG.length; i++) if (CONFIG[i].parametro === p) return CONFIG[i].valor; return ''; }
 function abrirListas(){
